@@ -1,0 +1,21 @@
+{
+
+ "train.rtm_mcth_doorclose_sa": {
+	"category": "neutral",
+	"sounds": [
+	  "train/rtm_mcth_doorclose_sa"
+	]
+ },
+ "train.rtm_mcth_dooropen_sa": {
+	"category": "neutral",
+	"sounds": [
+	  "train/rtm_mcth_dooropen_sa"
+	]
+ },
+ "train.rtm_mcth_none": {
+	"category": "neutral",
+	"sounds": [
+	  "train/rtm_mcth_none"
+	]
+ }
+}
