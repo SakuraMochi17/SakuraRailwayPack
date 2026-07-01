@@ -4,9 +4,9 @@
 "trainType": "EC",
 
 "trainModel2": {
-	"modelFile": "org_DC100/mdc_n_cMc.mqo",
+	"modelFile": "org_DC100/DC100_cMc.mqo",
 	"textures": [
-		["mat1", "textures/train/org_DC100/mdc_n_cMc.png", "Light"],
+		["mat1", "textures/train/org_DC100/DC100_cMc.png", "Light"],
 		["mat2", "textures/train/org_DC100/parts.png", "Light"]
 	],
 				"rendererPath": "scripts/Render_script_dc100_semiauto_sa.js"

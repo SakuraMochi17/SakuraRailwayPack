@@ -9,7 +9,7 @@ SakuraRailwayPack - RTM新規車両アドオン (骨組み)
   assets/minecraft/models/org_DC100/
       bogie.mqo            台車モデル (テンプレート。要編集)
       mdc_n_Tc.mqo          Tc車(制御車)モデル (テンプレート。要編集)
-      mdc_n_cMc.mqo         cMc車(制御電動車)モデル (テンプレート。要編集)
+      DC100_cMc.mqo         cMc車(制御電動車)モデル (テンプレート。要編集)
 
   assets/minecraft/scripts/
       Render_script_dc100_sa.js           通常編成用レンダースクリプト
@@ -21,7 +21,7 @@ SakuraRailwayPack - RTM新規車両アドオン (骨組み)
       button/Tc.png          Tc車 操作パネル用テクスチャ
       button/cMc.png         cMc車 操作パネル用テクスチャ
       mdc_n_Tc.png / _light0 / _light1 / _light2    Tc車 車体テクスチャ(発光用含む)
-      mdc_n_cMc.png / _light0 / _light1 / _light2   cMc車 車体テクスチャ(発光用含む)
+      DC100_cMc.png / _light0 / _light1 / _light2   cMc車 車体テクスチャ(発光用含む)
       parts.png / _light0 / _light1 / _light2        共通パーツテクスチャ(台車以外の細部)
       sign.png               方向幕テクスチャ
 
