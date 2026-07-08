@@ -388,3 +388,82 @@ brkb = brkb - EBrakePressure / 4.0;
 - **ActionPartsは3つのpassすべてで`render()`を呼ぶ**: 通常描画(0)・ホバー輪郭(LIGHT=2)・右クリック判定(PICK=255)。1つでも欠けると機能しない。
 - **DataMapのSYNC_FLAGを忘れない**: サーバー経由で同期しないと他クライアントの表示がズレる。
 - **entity=null時のフォールバック処理を必ず書く**: モデルプレビュー等で`entity`が渡らないケースがあるため、`entity == null`分岐で安全にrenderできるようにする。
+
+---
+
+## 12. スクリプト未対応車両のスクリプト化（hi03式「スクリプト対応化スクリプト」）
+
+json設定のみでスクリプトを持たない車両に、jsonの動作設定（ドア・パンタ・走行音）を引き継いだまま
+render/sound/serverスクリプトを後付けするための雛形（作者: hi03, ver.α1.0）。
+
+⚠️ **自分で作成したモデルパック以外には組み込まないこと**（改造にあたるため無断組み込み不可）。
+
+### 導入方法
+
+対応させたいスクリプトファイル（render.js/sound.js/server.js）をscriptsフォルダ以下にコピーし、
+**他と競合しないよう必ずファイル名を変更**する。車両jsonから以下のように参照する。
+
+```json
+{
+  "trainModel2": {
+    "modelFile": "test/test.mqo",
+    "textures": [["mat1", "textures/test/test.png", "AlphaBlend,Light"]],
+    "rendererPath": "scripts/test/render_test.js"
+  },
+  "soundScriptPath": "scripts/test/sound_test.js",
+  "serverScriptPath": "scripts/test/server_test.js"
+}
+```
+
+### render.js の仕組み
+
+- `init()`内で`par2.model.getGroupObjects()`を全走査し、**mqo内の全グループオブジェクトを自動的に`Parts`として登録**する（`objList[objName]`）。個別に`registerParts`を書く必要がない。
+- json側の`door_left` / `door_right` / `pantograph_front` / `pantograph_back`（config内のドア・パンタ定義）を読み取り、`renderer.getDoorMovementL/R(entity)` や `renderer.getPantographMovementFront/Back(entity)` の可動量をそのまま使って**jsonで定義した開閉・昇降アニメーションを引き継いで自動描画**する（`renderPartsAll` → `renderParts`で`pos`基準に`glTranslatef`/`glRotatef`を適用）。
+- 通常は全パーツが自動描画されるが、**手動で描画順序やGL変換を制御したいパーツ**は`excludeList`に名前を追加することで自動描画から除外し、`objList["パーツ名"].render(renderer)`で任意のタイミング・変換を加えて描画できる。
+
+```js
+function hi03_init_customDoor(par1, par2) {
+    var list = ["doorLF1", "doorLB1", "doorRF1", "doorRB1", "doorDummy"];
+    NGTUtil.addArray(excludeList, list); // 自動描画から除外(数が少なければexcludeList.push()でも可)
+}
+
+function hi03_render_customDoor(entity, pass, par3) {
+    GL11.glPushMatrix();
+    GL11.glTranslatef(0, 0, moveLF);
+    objList["doorLF1"].render(renderer); // 除外したパーツを手動描画
+    GL11.glPopMatrix();
+}
+```
+
+追加する組み込み関数は、テンプレート内の「組み込み関数追加スペース」コメントの間、または
+末尾の「コピペスペース」に追記し、`init()`/`render()`本体から呼び出す形にする。
+
+### sound.js の仕組み
+
+- 冒頭の`soundLibPath`に外部SoundLib（例: `scripts/sound_223.js`）のパスを指定すると、
+  `eval`でそのSoundLib本体を読み込みつつ`onUpdate(su)`を呼び出す（**改造不可のSoundLibや既存の音声スクリプトを、本体を書き換えずに読み込ませて拡張できる**）。
+- `soundLibPath`を空のままにすると、json側の`sound_Acceleration`/`sound_Deceleration`/`sound_D_S`/`sound_S_A`/`sound_Stop`（走行音定義）とノッチ・速度から自動でクロスフェード再生する`sound_playJsonStyle(su)`にフォールバックする。json駆動の走行音を維持しつつ、追加のカスタム音声処理だけを組み込み関数として足せる。
+
+### server.js の仕組み
+
+jsonから引き継ぐ設定が特にないため、`onUpdate(entity, scriptExecuter)`の空テンプレートのみ。組み込み関数はそのまま追記する。
+
+### 開発者向け規約（他スクリプトとの競合防止）
+
+- **dataMapキー名の頭に作者名を付ける**: 例 `dataMap.getBoolean("hi03_tickUpdate")`。他の組み込みスクリプトと共存させる前提のため必須。
+- **グローバル関数・変数名の頭にも作者名を付ける**: 例 `hi03_doorMoveDistance = 0.63;`。
+- **組み込み用関数は1スコープ（1関数）にまとめる**: 内部で使うヘルパー関数はその関数内にネストして定義し、外部から参照できないようにすることで名前衝突を防ぐ。
+
+```js
+// 非推奨: setBooleanがグローバルに漏れて他スクリプトと衝突しうる
+function main(){ setBoolean(dataMap, key, value); }
+function setBoolean(dataMap, key, value){ /* 実装 */ }
+
+// 推奨: ヘルパーを内部にネストしてスコープを閉じる
+function hi03_main(){
+  function setBoolean(dataMap, key, value){ /* 実装 */ }
+  setBoolean(dataMap, key, value);
+}
+```
+
+- **MC1.7.10/1.12両対応を意識する**: テンプレート自体は両対応済み。追加関数も可能な限り両対応にする（バージョン分岐の要領は本ドキュメント11節と同様、`RTMCore.VERSION`判定を使う）。
